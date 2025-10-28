@@ -3,33 +3,52 @@
 export async function generateResponse(input, trainingText) {
     if (!trainingText) return "⚠️ Please upload a .txt file first.";
 
-    const words = trainingText.split(/\s+/);
-    if (words.length < 3) return "⚠️ Not enough text to train a model.";
+    // Tokenize text: words and punctuation as separate tokens
+    const tokens = trainingText.match(/\b[\w']+\b|[.!?]/g);
+    if (!tokens || tokens.length < 10) return "⚠️ Not enough text to train a model.";
 
-    // Build Markov chain
+    const n = 5; // 5-gram
     const chain = {};
-    for (let i = 0; i < words.length - 1; i++) {
-        const word = words[i];
-        const next = words[i + 1];
-        if (!chain[word]) chain[word] = [];
-        chain[word].push(next);
+
+    // Build n-gram chain
+    for (let i = 0; i <= tokens.length - n; i++) {
+        const key = tokens.slice(i, i + n - 1).join(" ").toLowerCase();
+        const next = tokens[i + n - 1];
+        if (!chain[key]) chain[key] = [];
+        chain[key].push(next);
     }
 
-    // Pick a start word — based on user input or random
-    let currentWord = input.split(/\s+/).pop();
-    if (!chain[currentWord]) {
+    // Determine start key from user input
+    let inputTokens = input.toLowerCase().match(/\b[\w']+\b/g) || [];
+    let startKey = inputTokens.slice(- (n - 1)).join(" ");
+    if (!chain[startKey]) {
         const keys = Object.keys(chain);
-        currentWord = keys[Math.floor(Math.random() * keys.length)];
+        startKey = keys[Math.floor(Math.random() * keys.length)];
     }
 
-    // Generate a short sentence
-    let result = [currentWord];
-    for (let i = 0; i < 30; i++) {
-        const options = chain[currentWord];
+    // Generate sentence deterministically
+    const result = startKey.split(" ");
+    for (let i = 0; i < 50; i++) {
+        const options = chain[startKey];
         if (!options || options.length === 0) break;
-        currentWord = options[Math.floor(Math.random() * options.length)];
-        result.push(currentWord);
+
+        // deterministic "random" choice based on current key
+        let index = 0;
+        for (let c = 0; c < startKey.length; c++) index += startKey.charCodeAt(c);
+        index = index % options.length;
+
+        const nextToken = options[index];
+        result.push(nextToken);
+
+        // slide window
+        startKey = result.slice(- (n - 1)).join(" ");
     }
 
-    return result.join(" ") + ".";
+    // Join tokens intelligently
+    let sentence = result.join(" ")
+        .replace(/\s([,.!?])/g, "$1")    // remove space before punctuation
+        .replace(/\s+/g, " ")             // normalize spaces
+        .trim();
+
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ".";
 }
