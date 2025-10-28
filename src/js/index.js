@@ -1,5 +1,5 @@
 // =========================================================
-// index.js — AI Chat UI Controller
+// index.js — AI Chat UI Controller (Updated, CORS Safe)
 // =========================================================
 
 // ---------------------- DOM Elements ----------------------
@@ -10,8 +10,8 @@ const fileUpload = document.getElementById("fileUpload");
 const modelSelect = document.getElementById("modelSelect");
 
 // ---------------------- Global State ----------------------
-let uploadedText = "";   // stores contents of uploaded .txt file
-let isTyping = false;    // to show typing animation
+let uploadedText = "";   // contents of uploaded .txt file
+let isTyping = false;    // show typing animation
 
 // ---------------------- Utility: Append Message ----------------------
 function appendMessage(sender, text) {
@@ -48,53 +48,49 @@ fileUpload.addEventListener("change", async (e) => {
     }
 
     try {
-        const text = await file.text();
-        uploadedText = text;
-        appendMessage("ai", `✅ Loaded file: ${file.name} (${text.length} chars)`);
+        uploadedText = await file.text();
+        appendMessage("ai", `✅ Loaded file: ${file.name} (${uploadedText.length} chars)`);
     } catch (err) {
         appendMessage("ai", "❌ Error reading file.");
     }
 });
+
+// ---------------------- Dynamic Module Loader ----------------------
+async function loadModelModule(modelName) {
+    try {
+        // cache-bust trick to avoid local file import issues
+        return await import(`./${modelName}.js?cachebust=${Date.now()}`);
+    } catch (err) {
+        console.error("Module load error:", err);
+        throw new Error("Failed to load model module");
+    }
+}
 
 // ---------------------- Message Sending Logic ----------------------
 async function handleSend() {
     const text = userInput.value.trim();
     if (!text) return;
 
-    // append user message
     appendMessage("user", text);
     userInput.value = "";
-
-    // show typing indicator
     showTypingIndicator();
 
-    // determine selected model
     const selectedModel = modelSelect.value;
     let response = "";
 
     try {
-        // Dynamically import model module
-        if (selectedModel === "markovcj") {
-            const { generateResponse } = await import("./markovcj.js");
-            response = await generateResponse(text, uploadedText);
-        } 
-        else if (selectedModel === "nb") {
-            const { generateResponse } = await import("./nb.js");
-            response = await generateResponse(text, uploadedText);
-        } 
-        else if (selectedModel === "kormogov") {
-            const { generateResponse } = await import("./kormogov.js");
-            response = await generateResponse(text, uploadedText);
-        } 
-        else {
-            response = "⚠️ Unknown model selected.";
-        }
+        let module;
+        if (selectedModel === "markovcj") module = await loadModelModule("markovcj");
+        else if (selectedModel === "nb") module = await loadModelModule("nb");
+        else if (selectedModel === "kormogov") module = await loadModelModule("kormogov");
+        else throw new Error("Unknown model selected");
+
+        response = await module.generateResponse(text, uploadedText);
     } catch (err) {
-        response = "❌ Error loading model.";
         console.error(err);
+        response = "❌ Error generating response.";
     }
 
-    // remove typing indicator & append AI response
     removeTypingIndicator();
     appendMessage("ai", response);
 }
