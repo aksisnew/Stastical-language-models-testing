@@ -1,0 +1,3 @@
+# ERRORS FOR V1
+-> getting cors errors for loading models , hosting the file on a local host is the fix but not convienient.
+-> ui.css is now in the html folder for better loading 
