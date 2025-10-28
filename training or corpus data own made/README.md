@@ -1,0 +1,1 @@
+The training or corpus data is being made by me, the aim is not to take data from anywhere.
