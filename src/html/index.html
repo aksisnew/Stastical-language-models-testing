@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Chat</title>
+    <link rel="stylesheet" href="../ui/css/ui.css" />
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <h2>AI Chat</h2>
+            <div class="controls">
+                <select id="modelSelect">
+                    <option value="markovcj">MarkovCJ</option>
+                    <option value="nb">Naive Bayes</option>
+                    <option value="kormogov">Kormogov</option>
+                </select>
+                <label for="fileUpload" class="upload-btn">Upload .txt</label>
+                <input type="file" id="fileUpload" accept=".txt" hidden />
+            </div>
+        </header>
+
+        <main class="chat-box" id="chatBox">
+            <!-- Chat bubbles will appear here -->
+        </main>
+
+        <footer class="chat-input">
+            <input type="text" id="userInput" placeholder="Type your message..." autocomplete="off" />
+            <button id="sendBtn">➤</button>
+        </footer>
+    </div>
+
+    <script src="../js/index.js"></script>
+</body>
+</html>
